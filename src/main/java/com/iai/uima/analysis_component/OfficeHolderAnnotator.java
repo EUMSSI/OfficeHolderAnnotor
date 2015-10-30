@@ -32,40 +32,47 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 	
 	public static final String PARAM_SIMILARITY_THRESHOLD = "similarityThreshold";
 	@ConfigurationParameter(name = PARAM_SIMILARITY_THRESHOLD, defaultValue = "0.5f")
-	private float similarityThreshold = 0.4f;
+	private float similarityThreshold;
 	
 	public static final String PARAM_BIGRAM_THRESHOLD = "similarityThreshold";
 	@ConfigurationParameter(name = PARAM_BIGRAM_THRESHOLD, defaultValue = "0.7f")
-	private float bigramThreshold = 0.7f;
+	private float bigramThreshold;
 	
 	public static final String PARAM_TERM_THRESHOLD = "similarityThreshold";
 	@ConfigurationParameter(name = PARAM_TERM_THRESHOLD, defaultValue = "0.25f")
-	private float termTreshold = 0.25f;
+	private float termTreshold;
 	
-	public static final String PARAM_OFFCE_TO_HOLDER_MAP_LOCATION = "office2holderLocation";
-	@ConfigurationParameter(name = PARAM_OFFCE_TO_HOLDER_MAP_LOCATION, defaultValue = "/maps/office_holders.json")
+	public static final String PARAM_OFFCE_TO_HOLDER_FILE = "office2holderLocation";
+	@ConfigurationParameter(name = PARAM_OFFCE_TO_HOLDER_FILE, defaultValue = "/maps/office_holders.json")
 	private String officeHolderMapLocation;
 	
-	public static final String PARAM_OFFCE_HOLDERS_LAST_NAME_MAP_LOCATION = "office2holderLastNameLocation";
-	@ConfigurationParameter(name = PARAM_OFFCE_HOLDERS_LAST_NAME_MAP_LOCATION, defaultValue = "/maps/office_holders_last_name.json")
+	public static final String PARAM_OFFCE_HOLDERS_LAST_NAME_FILE = "office2holderLastNameLocation";
+	@ConfigurationParameter(name = PARAM_OFFCE_HOLDERS_LAST_NAME_FILE, defaultValue = "/maps/office_holders_last_name.json")
 	private String officeHoldersLastNameMapLocation;
 	
-	public static final String PARAM_OFFICE_HOLDER_TERM_TO_NAME_MAP_LOCATION = "office2Term2holderLocation";
-	@ConfigurationParameter(name = PARAM_OFFCE_HOLDERS_LAST_NAME_MAP_LOCATION, defaultValue = "/maps/office_term.json")
+	public static final String PARAM_OFFICE_HOLDER_TERM_TO_NAME_FILE = "office2Term2holderLocation";
+	@ConfigurationParameter(name = PARAM_OFFICE_HOLDER_TERM_TO_NAME_FILE, defaultValue = "/maps/office_term.json")
 	private String officeHolderTermToNameMapLocation;
 	
+	public static final String PARAM_BIGRAM_MODEL_FILE = "bigramModelFile";
+	@ConfigurationParameter(name = PARAM_BIGRAM_MODEL_FILE, defaultValue = "/maps/w2_.tsv")
+	private String bigramModelFile;
+
 	JSONObject office2holder;
 	JSONObject fullName2lastName;
 	JSONObject office2term2holder;
 	
 	List<String[]> bigramModel;
 	
-	public void initialize(UimaContext context) throws ResourceInitializationException {
-	    System.out.println(getClass().getResource(officeHolderMapLocation).getPath());
-	    
+	@Override
+	public void initialize(UimaContext aContext) throws ResourceInitializationException {
+
+		super.initialize(aContext);
+		
 	    File f_oh = new File(getClass().getResource(officeHolderMapLocation).getPath());
 	    File f_ohln = new File(getClass().getResource(officeHoldersLastNameMapLocation).getPath());
 	    File f_ot = new File(getClass().getResource(officeHolderTermToNameMapLocation).getPath());
+	    File f_bm = new File(getClass().getResource(bigramModelFile).getPath());
 	    
 	    TsvParserSettings settings = new TsvParserSettings();
 	    TsvParser parser = new TsvParser(settings);
@@ -74,13 +81,16 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 			 office2holder = new JSONObject(
 					 				new JSONTokener(
 					 						new FileReader(f_oh)));
+			 
 		     fullName2lastName = new JSONObject(
 		    		 				new JSONTokener(
 		    		 						new FileReader(f_ohln)));
+		     
 		     office2term2holder= new JSONObject(
 		 							new JSONTokener(
 		 									new FileReader(f_ot)));
-		     bigramModel = parser.parseAll(new FileReader("input/maps/w2_.tsv"));
+		     
+		     bigramModel = parser.parseAll(new FileReader(f_bm));
 		     
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -116,8 +126,7 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 					
 					int sub = 0;
 					int add = 0;
-					if (person.equals("john f kennedy"))
-						System.out.println(a);
+					
 					while (documentText.charAt(end+add)!=' '){
 						add++;
 					}

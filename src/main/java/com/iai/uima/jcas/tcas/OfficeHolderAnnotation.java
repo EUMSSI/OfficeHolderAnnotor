@@ -11,8 +11,8 @@ import org.apache.uima.jcas.tcas.Annotation;
 
 
 /** 
- * Updated by JCasGen Wed Oct 07 15:03:35 CEST 2015
- * XML source: D:/merlin/workspace_eumssi/com.iai.SpokenNER/desc/SpokenNER.xml
+ * Updated by JCasGen Wed Oct 28 16:27:48 CET 2015
+ * XML source: D:/merlin/GitHub/OfficeHolderAnnotor/src/main/resources/desc/SpokenNER.xml
  * @generated */
 public class OfficeHolderAnnotation extends Annotation {
   /** @generated

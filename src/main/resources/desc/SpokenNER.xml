@@ -25,7 +25,7 @@
     <configurationParameterSettings/>
     <typeSystemDescription>
       <imports>
-        <import location="../src/main/resources/com/iai/uima/jcas/tcas/OfficeHolderTypeSystem.xml"/>
+        <import name="com.iai.uima.jcas.tcas.OfficeHolderTypeSystem"/>
       </imports>
     </typeSystemDescription>
     <typePriorities/>

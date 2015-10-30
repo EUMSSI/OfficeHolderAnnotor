@@ -14,7 +14,7 @@ import org.apache.uima.cas.Feature;
 import org.apache.uima.jcas.tcas.Annotation_Type;
 
 /** 
- * Updated by JCasGen Wed Oct 07 15:03:36 CEST 2015
+ * Updated by JCasGen Wed Oct 28 16:27:48 CET 2015
  * @generated */
 public class OfficeHolderAnnotation_Type extends Annotation_Type {
   /** @generated 
