@@ -31,15 +31,15 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 	private String language;
 	
 	public static final String PARAM_SIMILARITY_THRESHOLD = "similarityThreshold";
-	@ConfigurationParameter(name = PARAM_SIMILARITY_THRESHOLD, defaultValue = "0.5f")
+	@ConfigurationParameter(name = PARAM_SIMILARITY_THRESHOLD, defaultValue = "0.4f")
 	private float similarityThreshold;
 	
-	public static final String PARAM_BIGRAM_THRESHOLD = "similarityThreshold";
+	public static final String PARAM_BIGRAM_THRESHOLD = "bigramThreshold";
 	@ConfigurationParameter(name = PARAM_BIGRAM_THRESHOLD, defaultValue = "0.7f")
 	private float bigramThreshold;
 	
-	public static final String PARAM_TERM_THRESHOLD = "similarityThreshold";
-	@ConfigurationParameter(name = PARAM_TERM_THRESHOLD, defaultValue = "0.25f")
+	public static final String PARAM_TERM_THRESHOLD = "termTreshold";
+	@ConfigurationParameter(name = PARAM_TERM_THRESHOLD, defaultValue = "0.55f")
 	private float termTreshold;
 	
 	public static final String PARAM_OFFCE_TO_HOLDER_FILE = "office2holderLocation";
@@ -102,10 +102,12 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 	public void process(JCas aJCas) throws AnalysisEngineProcessException {
 		
 		String documentText = aJCas.getDocumentText();
-		
+		float maxSimilarity = 0.0f;
+	    boolean nameAnnotation = false;
+				
 		for (String office : office2holder.keySet()){
-			String _office = office.replace('_', ' ');
-			Matcher matcher = Pattern.compile(_office).matcher(documentText);
+		  //String office = office.replace('_', ' ');
+			Matcher matcher = Pattern.compile(office).matcher(documentText);
 			
 			while (matcher.find()){
 				
@@ -116,14 +118,16 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 				annotation.setSimilarity(0.0);
 				
 				JSONArray officeHolder = (JSONArray) office2holder.get(office);
-				
+				maxSimilarity = 0.0f;
+			    nameAnnotation = false;
+			    String maxA = "";
 				for (Object o : officeHolder){
 					String person = (String) o;
 					
 					end = begin+person.length();
 
 					String a = documentText.substring(begin, end);
-					
+				   	
 					int sub = 0;
 					int add = 0;
 					
@@ -144,6 +148,7 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 					}
 					
 					String[] nameAsArray = a.split(" ");
+				
 					
 					String s = "";
 					for (String s_prime : nameAsArray){
@@ -162,27 +167,41 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 						annotation.addToIndexes();
 						break;
 					}
-					boolean detectedName = true;
-					if (similarity <= bigramThreshold)
-						detectedName = detectedUncommonWordSequence(nameAsArray);
-
-					if (	detectedName
-						&&	similarity >= similarityThreshold
-						&&	annotation.getSimilarity() < similarity ){
+					else if (similarity > maxSimilarity){
+						maxSimilarity = similarity;
 						annotation.setSimilarity(similarity);
 						annotation.setMostSimilarPerson(person);
 						annotation.setEnd(end);
-					}
-					else if (similarity <= termTreshold){
-//						JSONObject jsonOffice = (JSONObject) office2term2holder.get(_office);
-//						// XXX Find the publication date in the jCas
-//						String theOne = ((JSONArray) jsonOffice.get("2000")).getString(0);
-//						annotation.setSimilarity(similarity);
-//						annotation.setMostSimilarPerson(person);
-//						annotation.setEnd(matcher.end()+theOne.length()+1);
+						maxA = a;
+								
 					}
 				}
-				if (annotation.getSimilarity() >= similarityThreshold){
+				if (annotation.getSimilarity() > similarityThreshold){
+//				if (annotation.getSimilarity() > 0.2f){
+					
+					boolean uncommonWord = true;
+					String [] maxNameAsArray = maxA.split(" ");
+					nameAnnotation = true;
+					if (annotation.getSimilarity() < bigramThreshold){
+					   uncommonWord = detectedUncommonWordSequence(maxNameAsArray);
+					
+					   if (	uncommonWord == false ){
+ 				         nameAnnotation = false;
+					   }
+					}
+				//	else if (similarity < termTreshold){
+//						JSONObject jsonOffice = (JSONObject) office2term2holder.get(office);
+//						// XXX Find the publication date in the jCas
+//						String theOne = ((JSONArray) jsonOffice.get("2000")).getString(0);
+//					    if (jsonOffice.get(publicationDate)).getString(0) == annotation.getMostSimilarPerson()){
+//					    	
+//					    }
+//					    else {
+//					    	nameAnnotation = false;
+//					    }
+					//}
+				}
+				if (nameAnnotation == true){
 					annotation.addToIndexes();
 				}
 			}
@@ -191,15 +210,27 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 	}
 	
 	private boolean detectedUncommonWordSequence(String[] wordSequnce){
+		boolean found=false;
 		if (wordSequnce.length >= 2){
 			int i;
-			for (String[] line : bigramModel)
-				for (i=0;i<wordSequnce.length-1;i++)
+			for (i=0;i<wordSequnce.length-1;i++){
+				found=false;
+				for (String[] line : bigramModel){
 					if (	wordSequnce[i].equals(line[1])
-						&& 	wordSequnce[i+1].equals(line[2]))
-						return false;
+						&& 	wordSequnce[i+1].equals(line[2])){
+						found = true;
+						break;
+					}
+			}
+			   if (found == false){
+				   return true;
+			   }
+		    }
 		}
-		return true;
+		else {
+			return true;
+		}
+		return false;
 	}
 	
 	
