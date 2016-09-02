@@ -1,6 +1,9 @@
 package com.iai.uima.analysis_component;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,6 +11,7 @@ import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.UimaContext;
 import org.apache.uima.fit.component.JCasAnnotator_ImplBase;
 import org.apache.uima.fit.descriptor.ConfigurationParameter;
+import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.json.JSONArray;
@@ -18,11 +22,16 @@ import org.json.JSONTokener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 import com.iai.uima.jcas.tcas.OfficeHolderAnnotation;
 import com.iai.utils.LevenshteinDistance;
 import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
+
+import eu.eumssi.uima.ts.SourceMeta;
 
 public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 	
@@ -107,7 +116,7 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 				
 		for (String office : office2holder.keySet()){
 		  //String office = office.replace('_', ' ');
-			Matcher matcher = Pattern.compile(office).matcher(documentText);
+			Matcher matcher = Pattern.compile(office,Pattern.CASE_INSENSITIVE).matcher(documentText);
 			
 			while (matcher.find()){
 				
@@ -182,24 +191,47 @@ public class OfficeHolderAnnotator extends JCasAnnotator_ImplBase {
 					boolean uncommonWord = true;
 					String [] maxNameAsArray = maxA.split(" ");
 					nameAnnotation = true;
-					if (annotation.getSimilarity() < bigramThreshold){
-					   uncommonWord = detectedUncommonWordSequence(maxNameAsArray);
-					
-					   if (	uncommonWord == false ){
- 				         nameAnnotation = false;
-					   }
-					}
-				//	else if (similarity < termTreshold){
-//						JSONObject jsonOffice = (JSONObject) office2term2holder.get(office);
-//						// XXX Find the publication date in the jCas
-//						String theOne = ((JSONArray) jsonOffice.get("2000")).getString(0);
-//					    if (jsonOffice.get(publicationDate)).getString(0) == annotation.getMostSimilarPerson()){
-//					    	
-//					    }
-//					    else {
-//					    	nameAnnotation = false;
-//					    }
-					//}
+//					if (annotation.getSimilarity() < bigramThreshold){
+//					   uncommonWord = detectedUncommonWordSequence(maxNameAsArray);
+//					
+//					   if (	uncommonWord == false ){
+// 				         nameAnnotation = false;
+//					   }
+//					}else 
+						if (annotation.getSimilarity() < termTreshold){
+						JSONObject jsonOffice = (JSONObject) office2term2holder.get(office);
+						// XXX Find the publication date in the jCas
+						SourceMeta meta = JCasUtil.selectSingle(aJCas, SourceMeta.class);
+						
+						if (meta.getDatePublished() != null) {
+							DateFormat df = new SimpleDateFormat("yyyy", Locale.ENGLISH);
+							int year = 0;
+							try {
+								Date date = df.parse(meta.getDatePublished());
+								Calendar cal = Calendar.getInstance();
+							    cal.setTime(date);
+							    year = cal.get(Calendar.YEAR);
+							} catch (ParseException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+							JSONArray holders;
+							try {
+								holders = (JSONArray)jsonOffice.get(Integer.valueOf(year).toString());
+							} catch (JSONException e) {
+								continue;
+							}
+							
+							System.out.println(holders);
+							for (int i=0;i<holders.length();i++) {
+								if (holders.get(i).equals(annotation.getMostSimilarPerson())) {
+									System.out.println(holders.get(i));
+									nameAnnotation = true;
+								}
+							}
+						}
+						}
 				}
 				if (nameAnnotation == true){
 					annotation.addToIndexes();
